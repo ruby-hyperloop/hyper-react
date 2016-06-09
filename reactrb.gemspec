@@ -18,13 +18,13 @@ Gem::Specification.new do |s|
   s.test_files     = `git ls-files -- {test,spec,features}/*`.split("\n")
   s.require_paths  = ['lib']
 
-  s.add_dependency 'opal', '0.8.0'  # '>= 0.8.0'
+  s.add_dependency 'opal', '>= 0.8.0'
   s.add_dependency 'opal-activesupport', '>= 0.2.0'
   s.add_dependency 'opal-browser', '0.2.0'
   s.add_development_dependency 'rake'
   s.add_development_dependency 'rspec-rails', '3.3.3'
   s.add_development_dependency 'timecop'
-  s.add_development_dependency 'opal-rspec'#, '0.4.3'
+  s.add_development_dependency 'opal-rspec'
   s.add_development_dependency 'sinatra'
   s.add_development_dependency 'opal-jquery'
 

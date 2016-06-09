@@ -5,17 +5,17 @@ if RUBY_ENGINE == 'opal'
     raise [
       "No React.js Available",
       "",
-      "React.js must be defined before requiring 'reactive-ruby'",
-      "'reactive-ruby' has been tested with react v13, v14, and v15.",
+      "React.js must be defined before requiring 'reactrb'",
+      "'reactrb' has been tested with react v13, v14, and v15.",
       "",
       "IF USING 'react-rails':",
       "   add 'require \"react\"' immediately before the 'require \"reactive-ruby\" directive in 'views/components.rb'.",
       "IF USING WEBPACK:",
       "   add 'react' to your webpack manifest.",
       "OTHERWISE TO GET THE LATEST TESTED VERSION",
-      "   add 'require \"react-latest\"' immediately before the require of 'reactive-ruby',",
+      "   add 'require \"react-latest\"' immediately before the require of 'reactrb',",
       "OR TO USE A SPECIFIC VERSION",
-      "   add 'require \"react-v1x\"' immediately before the require of 'reactive-ruby'."
+      "   add 'require \"react-v1x\"' immediately before the require of 'reactrb'."
     ].join("\n")
   end
   require 'react/hash'
