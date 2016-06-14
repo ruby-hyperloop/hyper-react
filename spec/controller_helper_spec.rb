@@ -14,7 +14,7 @@ RSpec.describe TestController, type: :controller do
     end
 
     it 'renders the application layout' do
-      get :index, no_prerender: true
+      get :index, no_prerender: false
       expect(response).to render_template(layout: :application)
     end
   end
