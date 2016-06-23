@@ -48,4 +48,5 @@ else
 
   Opal.append_path File.expand_path('../', __FILE__).untaint
   Opal.append_path File.expand_path('../sources/', __FILE__).untaint
+  #Opal.append_path File.expand_path('../reactrb/', __FILE__).untaint
 end

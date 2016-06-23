@@ -28,7 +28,6 @@ module React
 
       if base.name
         parent = base.name.split("::").inject([Module]) { |nesting, next_const| nesting + [nesting.last.const_get(next_const)] }[-2]
-
         class << parent
           def method_missing(n, *args, &block)
             name = n
@@ -227,6 +226,7 @@ module React
     end
 
     def method_missing(n, *args, &block)
+      puts "component method missing for #{n}"
       return props[n] if props.key? n # TODO deprecate and remove - done so that params shadow tags, no longer needed
       name = n
       if name =~ /_as_node$/
