@@ -4,12 +4,11 @@ module React
       attr_accessor :waiting_on_resources
     end
 
-    def self.build_or_render(node_only, name, *args, &block)
-      if node_only
-        React::RenderingContext.build { React::RenderingContext.render(name, *args, &block) }.to_n
-      else
-        React::RenderingContext.render(name, *args, &block)
-      end
+    def build_only(name, *args, &block)
+      React::Component.deprecation_warning(
+        '..._as_node is deprecated.  Render component and then use the .node method instead'
+      )
+      React::RenderingContext.build { React::RenderingContext.render(name, *args, &block) }.to_n
     end
 
     def self.render(name, *args, &block)

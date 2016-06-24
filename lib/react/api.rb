@@ -2,10 +2,15 @@ require 'react/native_library'
 
 module React
   class API
+
     @@component_classes = {}
 
     def self.import_native_component(opal_class, native_class)
       @@component_classes[opal_class] = native_class
+    end
+
+    def self.native_react_component?(native_class)
+      `native_class.isReactComponent` rescue nil
     end
 
     def self.create_native_react_class(type)
@@ -74,7 +79,7 @@ module React
         params << @@component_classes[type]
       elsif type.kind_of?(Class)
         params << create_native_react_class(type)
-      elsif HTML_TAGS.include?(type)
+      elsif React::Component::Tags::HTML_TAGS.include?(type)
         params << type
       elsif type.is_a? String
         return React::Element.new(type)

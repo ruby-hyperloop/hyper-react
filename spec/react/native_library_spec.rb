@@ -1,6 +1,5 @@
-if false
-  #require 'spec_helper'
-#require 'reactrb/auto-import'
+require 'spec_helper'
+require 'reactrb/auto-import'
 
 if opal?
 
@@ -16,7 +15,7 @@ module NativeLibraryTestModule
   end
 end
 
-describe "React::NativeLibrary", only: true do
+describe "React::NativeLibrary" do
 
   after(:each) do
     %x{
@@ -28,6 +27,20 @@ describe "React::NativeLibrary", only: true do
     }
     Object.send :remove_const, :NativeLibrary
     Object.send :remove_const, :NativeComponent
+  end
+
+  it "can detect a native React.js component", only: true do
+    %x{
+      window.NativeComponent = React.createClass({
+        displayName: "HelloMessage",
+        render: function render() {
+          return React.createElement("div", null, "Hello ", this.props.name);
+        }
+      })
+    }
+    expect(React::API.native_react_component?(`window.NativeComponent`)).to be_truthy
+    expect(React::API.native_react_component?(`{render: function render() {}}`)).to be_falsy
+    expect(React::API.native_react_component?(`window.DoesntExist`)).to be_falsy
   end
 
   # it "will import a React.js library into the Ruby name space" do
@@ -243,6 +256,5 @@ describe "React::NativeLibrary", only: true do
     end
 
   end
-end
 end
 end
