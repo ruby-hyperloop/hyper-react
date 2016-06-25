@@ -48,7 +48,8 @@ module React
           component = find_component(name)
           return React::RenderingContext.render(component, *params, &children) if component
         end
-        super
+        puts "about to super for #{name}"
+        Object.method_missing(name, *params, &children)
       end
 
       # install methods with the same name as the component in the parent class/module
@@ -81,7 +82,7 @@ module React
       private
 
       def find_component(name)
-        component = class_eval { const_get(name) if defined? name }
+        component = self.class.const_get(name) if self.class.const_defined? name
         if component
           unless component.method_defined? :render
             raise "#{name} does not appear to be a react component."

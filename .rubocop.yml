@@ -3,3 +3,6 @@ Metrics/LineLength:
 
 Style/MutableConstant:
   Enabled: false
+
+Lint/LiteralInCondition:
+  Enabled: false

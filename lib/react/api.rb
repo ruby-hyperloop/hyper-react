@@ -1,16 +1,37 @@
 require 'react/native_library'
 
 module React
-  class API
+  # Provides the internal mechanisms to interface between reactrb and native components
+  # the code will attempt to create a js component wrapper on any rb class that has a
+  # render (or possibly _render_wrapper) method.  The mapping between rb and js components
+  # is kept in the @@component_classes hash.
 
+  # Also provides the mechanism to build react elements
+
+  # TOOO - the code to deal with components should be moved to a module that will be included
+  # in a class which will then create the JS component for that class.  That module will then
+  # be included in React::Component, but can be used by any class wanting to become a react
+  # component (but without other DSL characteristics.)
+  class API
     @@component_classes = {}
 
     def self.import_native_component(opal_class, native_class)
       @@component_classes[opal_class] = native_class
     end
 
-    def self.native_react_component?(native_class)
-      `native_class.isReactComponent` rescue nil
+    def self.eval_native_react_component(name)
+      component = `eval(name)`
+      raise "#{name} is not defined" if `#{component} === undefined`
+      unless `#{component}.prototype !== undefined && !!#{component}.prototype.isReactComponent`
+        raise 'does not appear to be a native react component'
+      end
+      component
+    end
+
+    def self.native_react_component?(name)
+      eval_native_react_component(name)
+    rescue
+      nil
     end
 
     def self.create_native_react_class(type)

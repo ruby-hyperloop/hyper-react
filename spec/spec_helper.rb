@@ -69,7 +69,7 @@ if RUBY_ENGINE == 'opal'
 
   RSpec.configure do |config|
     config.run_all_when_everything_filtered = true
-    config.filter_run_including only: true
+    #config.filter_run_including only: true
     config.include React::SpecHelpers
     config.filter_run_excluding :ruby
   end
