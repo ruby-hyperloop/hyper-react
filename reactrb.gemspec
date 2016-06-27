@@ -32,6 +32,7 @@ Gem::Specification.new do |s|
   s.add_development_dependency 'rails', '4.2.4'
   s.add_development_dependency 'react-rails'
   s.add_development_dependency 'opal-rails'
+  s.add_development_dependency 'pry'
   if RUBY_PLATFORM == 'java'
     s.add_development_dependency 'jdbc-sqlite3'
     s.add_development_dependency 'activerecord-jdbcsqlite3-adapter'
