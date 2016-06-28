@@ -30,6 +30,8 @@ module React
         define_method(tag) do |*params, &children|
           React::RenderingContext.render(tag, *params, &children)
         end
+        alias_method tag.upcase, tag
+        const_set tag.upcase, tag
         # handle deprecated _as_node style
         define_method("#{tag}_as_node") do |*params, &children|
           React::RenderingContext.build_only(tag, *params, &children)
