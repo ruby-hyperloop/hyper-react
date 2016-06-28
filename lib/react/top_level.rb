@@ -22,6 +22,7 @@ module React
                 readOnly rel required role rows rowSpan sandbox scope scrolling seamless
                 selected shape size sizes span spellCheck src srcDoc srcSet start step style
                 tabIndex target title type useMap value width wmode dangerouslySetInnerHTML)
+  HASH_ATTRIBUTES = %w(data aria)
 
   def self.create_element(type, properties = {}, &block)
     React::API.create_element(type, properties, &block)
