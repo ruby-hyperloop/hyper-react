@@ -15,6 +15,8 @@ module React
     def self.included(base)
       base.include(API)
       base.include(Callbacks)
+      base.include(Tags)
+      base.include(DslInstanceMethods)
       base.class_eval do
         class_attribute :initial_state
         define_callback :before_mount
@@ -25,29 +27,6 @@ module React
         define_callback :before_unmount
       end
       base.extend(ClassMethods)
-
-      if base.name
-        parent = base.name.split("::").inject([Module]) { |nesting, next_const| nesting + [nesting.last.const_get(next_const)] }[-2]
-
-        class << parent
-          def method_missing(n, *args, &block)
-            name = n
-            if name =~ /_as_node$/
-              node_only = true
-              name = name.gsub(/_as_node$/, "")
-            end
-            begin
-              name = const_get(name)
-            rescue Exception
-              name = nil
-            end
-            unless name && name.method_defined?(:render)
-              return super
-            end
-            React::RenderingContext.build_or_render(node_only, name, *args, &block)
-          end
-        end
-      end
     end
 
     def initialize(native_element)
@@ -57,64 +36,6 @@ module React
     def render
       raise "no render defined"
     end unless method_defined?(:render)
-
-    def deprecated_params_method(name, *args, &block)
-      self.class.deprecation_warning "Direct access to param `#{name}`.  Use `params.#{name}` instead."
-      params.send(name, *args, &block)
-    end
-
-    def children
-      nodes = if `#{@native}.props.children==undefined`
-        []
-      else
-        [`#{@native}.props.children`].flatten
-      end
-      class << nodes
-        include Enumerable
-
-        def to_n
-          self
-        end
-
-        def each(&block)
-          if block_given?
-            %x{
-                  React.Children.forEach(#{self.to_n}, function(context){
-            #{block.call(React::Element.new(`context`))}
-                  })
-            }
-            nil
-          else
-            Enumerator.new(`React.Children.count(#{self.to_n})`) do |y|
-              %x{
-                    React.Children.forEach(#{self.to_n}, function(context){
-              #{y << React::Element.new(`context`)}
-                    })
-              }
-            end
-          end
-        end
-      end
-
-      nodes
-    end
-
-    def params
-      @props_wrapper
-    end
-
-    def props
-      Hash.new(`#{@native}.props`)
-    end
-
-    def refs
-      Hash.new(`#{@native}.refs`)
-    end
-
-    def state
-      #raise "No native ReactComponent associated" unless @native
-      @state_wrapper ||= StateWrapper.new(@native, self)
-    end
 
     def update_react_js_state(object, name, value)
       if object
@@ -206,46 +127,14 @@ module React
       self.class.process_exception(e, self)
     end
 
-    def p(*args, &block)
-      if block || args.count == 0 || (args.count == 1 && args.first.is_a?(Hash))
-        _p_tag(*args, &block)
-      else
-        Kernel.p(*args)
-      end
-    end
+    attr_reader :waiting_on_resources
 
-    def component?(name)
-      name_list = name.split("::")
-      scope_list = self.class.name.split("::").inject([Module]) { |nesting, next_const| nesting + [nesting.last.const_get(next_const)] }.reverse
-      scope_list.each do |scope|
-        component = name_list.inject(scope) do |scope, class_name|
-          scope.const_get(class_name)
-        end rescue nil
-        return component if component && component.method_defined?(:render)
+    def _render_wrapper
+      State.set_state_context_to(self) do
+        React::RenderingContext.render(nil) {render || ""}.tap { |element| @waiting_on_resources = element.waiting_on_resources if element.respond_to? :waiting_on_resources }
       end
-      nil
-    end
-
-    def method_missing(n, *args, &block)
-      return props[n] if props.key? n # TODO deprecate and remove - done so that params shadow tags, no longer needed
-      name = n
-      if name =~ /_as_node$/
-        node_only = true
-        name = name.gsub(/_as_node$/, "")
-      end
-      unless (HTML_TAGS.include?(name) || name == 'present'  || name == '_p_tag' || (name = component?(name, self)))
-        return super
-      end
-
-      if name == "present"
-        name = args.shift
-      end
-
-      if name == "_p_tag"
-        name = "p"
-      end
-
-      React::RenderingContext.build_or_render(node_only, name, *args, &block)
+    rescue Exception => e
+      self.class.process_exception(e, self)
     end
 
     def watch(value, &on_change)
@@ -256,14 +145,5 @@ module React
       State.initialize_states(self, self.class.define_state(*args, &block))
     end
 
-    attr_reader :waiting_on_resources
-
-    def _render_wrapper
-      State.set_state_context_to(self) do
-        React::RenderingContext.render(nil) {render || ""}.tap { |element| @waiting_on_resources = element.waiting_on_resources if element.respond_to? :waiting_on_resources }
-      end
-    rescue Exception => e
-      self.class.process_exception(e, self)
-    end
   end
 end

@@ -15,7 +15,7 @@ end
 
 if RUBY_ENGINE == 'opal'
   require File.expand_path('../vendor/jquery-2.2.4.min', __FILE__)
-  require 'react-latest'
+  require 'react-v14'
   require 'reactrb'
   require File.expand_path('../support/react/spec_helpers', __FILE__)
 
@@ -68,6 +68,8 @@ if RUBY_ENGINE == 'opal'
 
 
   RSpec.configure do |config|
+    config.run_all_when_everything_filtered = true
+    #config.filter_run_including only: true
     config.include React::SpecHelpers
     config.filter_run_excluding :ruby
   end
