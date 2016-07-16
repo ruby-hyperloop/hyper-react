@@ -43,15 +43,20 @@ module React
     end
 
     def render
-      raise "no render defined"
+      raise 'no render defined'
     end unless method_defined?(:render)
 
     def update_react_js_state(object, name, value)
+      return if @rendering_now
       if object
-        set_state({"***_state_updated_at-***" => Time.now.to_f, "#{object.class.to_s+'.' unless object == self}#{name}" => value})
+        name = "#{object.class}.#{name}" unless object == self
+        set_state(
+          '***_state_updated_at-***' => Time.now.to_f,
+          name => value
+        )
       else
-        set_state({name => value})
-      end rescue nil
+        set_state name => value
+      end
     end
 
     def emit(event_name, *args)
@@ -139,11 +144,14 @@ module React
     attr_reader :waiting_on_resources
 
     def _render_wrapper
+      @rendering_now = true
       State.set_state_context_to(self) do
         React::RenderingContext.render(nil) {render || ""}.tap { |element| @waiting_on_resources = element.waiting_on_resources if element.respond_to? :waiting_on_resources }
       end
     rescue Exception => e
       self.class.process_exception(e, self)
+    ensure
+      @rendering_now = false
     end
 
     def watch(value, &on_change)
