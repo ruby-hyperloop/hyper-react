@@ -6,3 +6,6 @@ Style/MutableConstant:
 
 Lint/LiteralInCondition:
   Enabled: false
+
+Style/CommandLiteral:
+  EnforcedStyle: mixed

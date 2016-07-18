@@ -90,30 +90,47 @@ module React
       self.class.process_exception(e, self)
     end
 
-    def props_changed?(next_props)
-      return true unless props.keys.sort == next_props.keys.sort
-      props.detect { |k, v| `#{next_props[k]} != #{params[k]}`}
-    end
-
-    def should_component_update?(next_props, next_state)
+    def should_component_update?(native_next_props, native_next_state)
       State.set_state_context_to(self) do
-        next_props = Hash.new(next_props)
-        if self.respond_to?(:needs_update?)
-          !!self.needs_update?(next_props, Hash.new(next_state))
-        elsif false # switch to true to force updates per standard react
-          true
-        elsif props_changed? next_props
-          true
-        elsif `!next_state != !#{@native}.state`
-          true
-        elsif `!next_state && !#{@native}.state`
-          false
-        elsif `next_state["***_state_updated_at-***"] != #{@native}.state["***_state_updated_at-***"]`
-          true
+        next_params = Hash.new(native_next_props)
+        if respond_to?(:needs_update?)
+          call_needs_update(next_params, native_next_state)
         else
-          false
+          !!(props_changed?(next_params) || native_state_changed?(native_next_state))
         end.to_n
       end
+    end
+
+    def call_needs_update(next_params, native_next_state)
+      component = self
+      next_params.define_singleton_method(:changed?) do
+        @changing ||= component.props_changed?(self)
+      end
+      next_state = Hash.new(native_next_state)
+      next_state.define_singleton_method(:changed?) do
+        @changing ||= component.native_state_changed?(native_next_state)
+      end
+      !!needs_update?(next_params, next_state)
+    end
+
+    def native_state_changed?(next_state)
+      %x{
+        var normalized_next_state =
+          (!#{next_state} || Object.keys(#{next_state}).length === 0 || #{nil} == next_state) ? false : #{next_state}
+        var normalized_current_state =
+          (!#{@native}.state || Object.keys(#{@native}.state).length === 0 || #{nil} == #{@native}.state) ? false : #{@native}.state
+        if (!normalized_current_state != !normalized_next_state) return(true)
+        if (!normalized_current_state && !normalized_next_state) return(false)
+        if (!normalized_current_state['***_state_updated_at-***'] ||
+            !normalized_next_state['***_state_updated_at-***']) return(true)
+        return (normalized_current_state['***_state_updated_at-***'] !=
+                normalized_next_state['***_state_updated_at-***'])
+      }
+    end
+
+    def props_changed?(next_params)
+      (props.keys.sort != next_params.keys.sort) ||
+        next_params.detect { |k, _v| `#{next_params[k]} != #{@native}.props[#{k}]` }
     end
 
     def component_will_update(next_props, next_state)
