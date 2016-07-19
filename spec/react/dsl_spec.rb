@@ -219,11 +219,11 @@ describe 'the React DSL' do
     stub_const 'Foo', Class.new(React::Component::Base)
     Foo.class_eval do
       def render
-        TestMod123::Bar().the_class
+        TestMod123::Bar().the_class.other_class
       end
     end
 
-    expect(React.render_to_static_markup(React.create_element(Foo))).to eq('<span class="the-class">a man walks into a bar</span>')
+    expect(React.render_to_static_markup(React.create_element(Foo))).to eq('<span class="other-class the-class">a man walks into a bar</span>')
   end
 
   it "can use the 'class' keyword for classes" do

@@ -79,8 +79,8 @@ module React
     def method_missing(class_name, args = {}, &new_block)
       class_name = class_name.gsub(/__|_/, '__' => '_', '_' => '-')
       new_props = properties.dup
-      new_props[:class] = "\
-        #{class_name} #{new_props[:class]} #{args.delete(:class)} #{args.delete(:className)}\
+      new_props[:className] = "\
+        #{class_name} #{new_props[:className]} #{args.delete(:class)} #{args.delete(:className)}\
       ".split(' ').uniq.join(' ')
       new_props.merge! args
       React::RenderingContext.replace(
