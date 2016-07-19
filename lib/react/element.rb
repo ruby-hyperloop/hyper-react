@@ -48,11 +48,10 @@ module React
       if props.empty?
         React::RenderingContext.render(self)
       else
+        props = API.convert_props(props)
         React::RenderingContext.render(
-          Element.new(
-            `React.cloneElement(#{to_n}, #{API.convert_props(props)})`,
-            type, properties.merge(props), block
-          )
+          Element.new(`React.cloneElement(#{to_n}, #{props.shallow_to_n})`,
+                      type, properties.merge(props), block)
         )
       end
     end
