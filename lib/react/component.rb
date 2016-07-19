@@ -17,6 +17,7 @@ module React
       base.include(Callbacks)
       base.include(Tags)
       base.include(DslInstanceMethods)
+      base.include(ShouldComponentUpdate)
       base.class_eval do
         class_attribute :initial_state
         define_callback :before_mount
@@ -88,49 +89,6 @@ module React
       State.set_state_context_to(self) { self.run_callback(:before_receive_props, Hash.new(next_props)) }
     rescue Exception => e
       self.class.process_exception(e, self)
-    end
-
-    def should_component_update?(native_next_props, native_next_state)
-      State.set_state_context_to(self) do
-        next_params = Hash.new(native_next_props)
-        if respond_to?(:needs_update?)
-          call_needs_update(next_params, native_next_state)
-        else
-          !!(props_changed?(next_params) || native_state_changed?(native_next_state))
-        end.to_n
-      end
-    end
-
-    def call_needs_update(next_params, native_next_state)
-      component = self
-      next_params.define_singleton_method(:changed?) do
-        @changing ||= component.props_changed?(self)
-      end
-      next_state = Hash.new(native_next_state)
-      next_state.define_singleton_method(:changed?) do
-        @changing ||= component.native_state_changed?(native_next_state)
-      end
-      !!needs_update?(next_params, next_state)
-    end
-
-    def native_state_changed?(next_state)
-      %x{
-        var normalized_next_state =
-          (!#{next_state} || Object.keys(#{next_state}).length === 0 || #{nil} == next_state) ? false : #{next_state}
-        var normalized_current_state =
-          (!#{@native}.state || Object.keys(#{@native}.state).length === 0 || #{nil} == #{@native}.state) ? false : #{@native}.state
-        if (!normalized_current_state != !normalized_next_state) return(true)
-        if (!normalized_current_state && !normalized_next_state) return(false)
-        if (!normalized_current_state['***_state_updated_at-***'] ||
-            !normalized_next_state['***_state_updated_at-***']) return(true)
-        return (normalized_current_state['***_state_updated_at-***'] !=
-                normalized_next_state['***_state_updated_at-***'])
-      }
-    end
-
-    def props_changed?(next_params)
-      (props.keys.sort != next_params.keys.sort) ||
-        next_params.detect { |k, _v| `#{next_params[k]} != #{@native}.props[#{k}]` }
     end
 
     def component_will_update(next_props, next_state)
