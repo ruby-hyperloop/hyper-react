@@ -24,7 +24,7 @@ module React
     #
     module ShouldComponentUpdate
       def should_component_update?(native_next_props, native_next_state)
-        State.set_state_context_to(self) do
+        State.set_state_context_to(self, false) do
           next_params = Hash.new(native_next_props)
           # rubocop:disable Style/DoubleNegation # we must return true/false to js land
           if respond_to?(:needs_update?)

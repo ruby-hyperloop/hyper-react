@@ -43,25 +43,8 @@ module React
       @native = native_element
     end
 
-    def render
-      raise 'no render defined'
-    end unless method_defined?(:render)
-
-    def update_react_js_state(object, name, value)
-      return if @rendering_now
-      if object
-        name = "#{object.class}.#{name}" unless object == self
-        set_state(
-          '***_state_updated_at-***' => Time.now.to_f,
-          name => value
-        )
-      else
-        set_state name => value
-      end
-    end
-
     def emit(event_name, *args)
-      self.params["_on#{event_name.to_s.event_camelize}"].call(*args)
+      params["_on#{event_name.to_s.event_camelize}"].call(*args)
     end
 
     def component_will_mount
@@ -69,14 +52,14 @@ module React
       @props_wrapper = self.class.props_wrapper.new(Hash.new(`#{@native}.props`))
       set_state! initial_state if initial_state
       State.initialize_states(self, initial_state)
-      State.set_state_context_to(self) { self.run_callback(:before_mount) }
+      State.set_state_context_to(self) { run_callback(:before_mount) }
     rescue Exception => e
       self.class.process_exception(e, self)
     end
 
     def component_did_mount
       State.set_state_context_to(self) do
-        self.run_callback(:after_mount)
+        run_callback(:after_mount)
         State.update_states_to_observe
       end
     rescue Exception => e
@@ -118,15 +101,33 @@ module React
 
     attr_reader :waiting_on_resources
 
-    def _render_wrapper
-      @rendering_now = true
-      State.set_state_context_to(self) do
-        React::RenderingContext.render(nil) {render || ""}.tap { |element| @waiting_on_resources = element.waiting_on_resources if element.respond_to? :waiting_on_resources }
+    def update_react_js_state(object, name, value)
+      if object
+        name = "#{object.class}.#{name}" unless object == self
+        set_state(
+          '***_state_updated_at-***' => Time.now.to_f,
+          name => value
+        )
+      else
+        set_state name => value
       end
+    end
+
+    def render
+      raise 'no render defined'
+    end unless method_defined?(:render)
+
+    def _render_wrapper
+      State.set_state_context_to(self, true) do
+        element = React::RenderingContext.render(nil) { render || '' }
+        @waiting_on_resources =
+          element.waiting_on_resources if element.respond_to? :waiting_on_resources
+        element
+      end
+    # rubocop:disable Lint/RescueException # we want to catch all exceptions regardless
     rescue Exception => e
+      # rubocop:enable Lint/RescueException
       self.class.process_exception(e, self)
-    ensure
-      @rendering_now = false
     end
 
     def watch(value, &on_change)
@@ -136,6 +137,5 @@ module React
     def define_state(*args, &block)
       State.initialize_states(self, self.class.define_state(*args, &block))
     end
-
   end
 end
