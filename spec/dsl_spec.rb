@@ -1,4 +1,5 @@
 require 'spec_helper'
+require 'reactrb/auto-import'
 
 if opal?
 
@@ -16,6 +17,18 @@ describe 'the React DSL' do
       Foo.class_eval do
         include React::Component
         render(:div, class: :foo) do
+          "hello"
+        end
+      end
+
+      expect(React.render_to_static_markup(React.create_element(Foo))).to eq('<div class="foo">hello</div>')
+    end
+
+    it "can accept the html tag class name rather than a symbol" do
+      stub_const 'Foo', Class.new
+      Foo.class_eval do
+        include React::Component
+        render(DIV, class: :foo) do
           "hello"
         end
       end
@@ -219,11 +232,47 @@ describe 'the React DSL' do
     stub_const 'Foo', Class.new(React::Component::Base)
     Foo.class_eval do
       def render
-        TestMod123::Bar().the_class.other_class
+        TestMod123::Bar.the_class.other_class
       end
     end
 
     expect(React.render_to_static_markup(React.create_element(Foo))).to eq('<span class="other-class the-class">a man walks into a bar</span>')
+  end
+
+  it "can use haml class names with CAPCASED builtin tags" do
+    stub_const 'Foo', Class.new
+    Foo.class_eval do
+      include React::Component
+      def render
+        DIV.the_class { 'hello' }
+      end
+    end
+
+    expect(React.render_to_static_markup(React.create_element(Foo))).to eq('<div class="the-class">hello</div>')
+  end
+
+  it "can use haml class names after params in builtin tags" do
+    stub_const 'Foo', Class.new
+    Foo.class_eval do
+      include React::Component
+      def render
+        p(data: { foo: :bar }).the_class
+      end
+    end
+
+    expect(React.render_to_static_markup(React.create_element(Foo))).to eq('<p data-foo="bar" class="the-class"></p>')
+  end
+
+  it "can use haml class names after params with CAPCASED builtin tags" do
+    stub_const 'Foo', Class.new
+    Foo.class_eval do
+      include React::Component
+      def render
+        DIV(data: { foo: :bar }).the_class
+      end
+    end
+
+    expect(React.render_to_static_markup(React.create_element(Foo))).to eq('<div data-foo="bar" class="the-class"></div>')
   end
 
   it "can use the 'class' keyword for classes" do

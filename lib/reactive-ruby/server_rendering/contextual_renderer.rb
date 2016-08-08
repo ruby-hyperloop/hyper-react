@@ -24,7 +24,6 @@ module ReactiveRuby
             prerender_options = prerender_options[:static] ? :static : true
           end
         end
-
         super(component_name, props, prerender_options)
       end
 
