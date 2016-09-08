@@ -113,9 +113,9 @@ module React
       end
     end
 
-    # def render
-    #   raise 'no render defined'
-    # end unless respond_to?(:render)
+    def render
+      raise 'no render defined'
+    end unless method_defined?(:render)
 
     def _render_wrapper
       State.set_state_context_to(self, true) do
