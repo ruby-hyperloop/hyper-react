@@ -2,6 +2,7 @@ module React
   module Component
     # class level methods (macros) for components
     module ClassMethods
+
       def reactrb_component?
         true
       end

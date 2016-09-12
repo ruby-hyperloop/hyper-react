@@ -30,6 +30,7 @@ Gem::Specification.new do |s|
 
   # For Test Rails App
   s.add_development_dependency 'rails', '4.2.4'
+  s.add_development_dependency 'mime-types', '< 3'
   s.add_development_dependency 'react-rails'
   s.add_development_dependency 'opal-rails'
   s.add_development_dependency 'pry'

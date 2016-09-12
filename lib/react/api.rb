@@ -37,7 +37,7 @@ module React
     end
 
     def self.create_native_react_class(type)
-      raise "Provided class should define `render` method"  if !(type.respond_to? :render)
+      raise "Provided class should define `render` method"  if !(type.method_defined? :render)
       render_fn = (type.method_defined? :_render_wrapper) ? :_render_wrapper : :render
       # this was hashing type.to_s, not sure why but .to_s does not work as it Foo::Bar::View.to_s just returns "View"
       @@component_classes[type] ||= %x{
