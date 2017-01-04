@@ -117,9 +117,12 @@ module React
 
     def _render_wrapper
       State.set_state_context_to(self, true) do
-        element = React::RenderingContext.render(nil) { render || '' }
-        @waiting_on_resources =
-          element.waiting_on_resources if element.respond_to? :waiting_on_resources
+        element = nil
+        React::RenderingContext.create_context do
+          element = React::RenderingContext.render(nil) { render || '' }
+          @waiting_on_resources =
+            element.waiting_on_resources if element.respond_to? :waiting_on_resources
+        end
         element
       end
     # rubocop:disable Lint/RescueException # we want to catch all exceptions regardless
