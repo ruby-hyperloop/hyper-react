@@ -4,6 +4,9 @@ rvm:
   - 2.0.0
   - 2.1
   - jruby-19mode
+branches:
+  only:
+    - master
 before_script:
   - phantomjs --version
 env:
