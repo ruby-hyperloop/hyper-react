@@ -80,9 +80,11 @@ module React
         states[object][name]
       end
 
-      def set_state(object, name, value, delay=nil)
+      def set_state(object, name, value, delay = true)
         states[object][name] = value
-        if delay || @bulk_update_flag
+
+        # Only delay updates if we are NOT prerendering
+        if IsomorphicHelpers.on_opal_client? && (delay || @bulk_update_flag)
           @delayed_updates ||= Hash.new { |h, k| h[k] = {} }
           @delayed_updates[object][name] = [value, Set.new]
           @delayed_updater ||= after(0.001) do
