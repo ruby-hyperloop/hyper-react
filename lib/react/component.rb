@@ -50,6 +50,7 @@ module Hyperloop
       end
 
       def component_will_mount
+        self.class.instance << self unless self.class.instance.include?(self)
         React::IsomorphicHelpers.load_context(true) if React::IsomorphicHelpers.on_opal_client?
         # set_state! initial_state if initial_state
         # State.initialize_states(self, initial_state)
@@ -97,6 +98,8 @@ module Hyperloop
         end
       rescue Exception => e
         self.class.process_exception(e, self)
+      ensure
+        self.class.instance.delete self
       end
 
       attr_reader :waiting_on_resources

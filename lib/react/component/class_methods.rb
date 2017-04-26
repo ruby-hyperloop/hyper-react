@@ -184,6 +184,26 @@ module React
           current_tree
         end
       end
+
+      def instance
+        @__instances ||= [].tap do |arr|
+          arr.define_singleton_method(:method_missing) do |method, *args, &block|
+            if length > 1 && self[0].respond_to?(method)
+              raise "Ambiguous component application.\n"\
+              "There are #{length} #{self.class.name} components mounted.\n"\
+              "You can either apply #{method} to a specific component using component[x].#{method};\n"\
+              "use an enumerator method like each or collect;\n"\
+              "or apply the method to the #{self.class.name} class."
+            elsif length == 0
+              raise "There are no #{self.class.name} components mounted.\n"\
+              "Use #{self.class.name}.#{method} if you want to apply #{method} to the class."
+            else
+              self[0].send(method, *args, &block)
+            end
+          end
+        end
+
+      end
     end
   end
 end
