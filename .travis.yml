@@ -1,9 +1,8 @@
 language: ruby
 rvm:
-  - 1.9.3
-  - 2.0.0
   - 2.1
-  - jruby-19mode
+  - 2.4
+  - jruby-9.1.9.0
 before_script:
   - phantomjs --version
 env:
@@ -16,6 +15,7 @@ gemfile:
   - gemfiles/opal_0.9_react_14.gemfile
   - gemfiles/opal_0.9_react_15.gemfile
 cache:
+  bundler: true
   directories:
     - "travis_phantomjs"
 branches:
@@ -36,12 +36,13 @@ script:
 # These two setup seems to run indefinitely long
 # further investigation required.
 matrix:
+  fast_finish: true
   exclude:
-  - rvm: jruby-19mode
+  - rvm: jruby-9.1.9.0
     gemfile: gemfiles/opal_0.9_react_13.gemfile
-  - rvm: jruby-19mode
+  - rvm: jruby-9.1.9.0
     gemfile: gemfiles/opal_0.9_react_14.gemfile
-  - rvm: jruby-19mode
+  - rvm: jruby-9.1.9.0
     gemfile: gemfiles/opal_0.9_react_15.gemfile
   include:
   - rvm: 2.1
