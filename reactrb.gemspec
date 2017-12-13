@@ -21,6 +21,8 @@ Gem::Specification.new do |s|
   s.add_dependency 'opal', '>= 0.8.0'
   s.add_dependency 'opal-activesupport', '>= 0.2.0'
   s.add_dependency 'opal-browser', '0.2.0'
+  s.add_dependency 'mini_racer', '~> 0.1.14'
+
   s.add_development_dependency 'rake'
   s.add_development_dependency 'rspec-rails', '3.3.3'
   s.add_development_dependency 'timecop'
@@ -40,6 +42,6 @@ Gem::Specification.new do |s|
     s.add_development_dependency 'therubyrhino'
   else
     s.add_development_dependency 'sqlite3', '1.3.10'
-    s.add_development_dependency 'therubyracer', '0.12.2'
+    s.add_development_dependency 'mini_racer', '~> 0.1.14'
   end
 end

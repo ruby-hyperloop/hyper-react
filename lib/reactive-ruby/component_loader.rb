@@ -17,19 +17,22 @@ module ReactiveRuby
 
     def load!(file = components)
       return true if loaded?
-      self.load(file)
+      load(file)
     ensure
       raise "No react.rb components found in #{components}.rb" unless loaded?
     end
 
     def loaded?
-      !!v8_context.eval('Opal.React')
+      !!v8_context.eval('Opal.React !== undefined')
+    rescue ::ExecJS::Error
+      false
     end
 
     private
 
     def components
-      # Make this configurable at some point
+      opts = ::Rails.configuration.react.server_renderer_options
+      return opts[:files].first.gsub(/.js$/, '') if opts && opts[:files]
       'components'
     end
 
