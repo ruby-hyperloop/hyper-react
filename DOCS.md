@@ -612,11 +612,7 @@ Ruby has a rich set of mechanisms enabling code reuse, and Hyperloop is intended
 One common use case is a component wanting to update itself on a time interval. It's easy to use the kernel method `every`, but it's important to cancel your interval when you don't need it anymore to save memory. React provides [lifecycle methods](/docs/working-with-the-browser.html#component-lifecycle) that let you know when a component is about to be created or destroyed. Let's create a simple mixin that uses these methods to provide a React friendly `every` function that will automatically get cleaned up when your component is destroyed.
 
 
-<div class="codemirror-live-edit"
-  data-heading="Using state"
-  data-rows=33
-  data-top-level-component="TickTock">
-<pre>
+```ruby runable
 module ReactInterval
 
   def self.included(base)
@@ -649,7 +645,7 @@ class TickTock < Hyperloop::Component
     "Hyperloop has been running for #{state.seconds} seconds".para
   end
 end
-</pre></div>
+```
 
 Notice that TickTock effectively has two before_mount callbacks, one that is called to initialize the `@intervals` array and another to initialize `state.seconds`
 
@@ -798,11 +794,7 @@ Along with params components may be passed a block which is used to build the co
 
 The instance method `children` returns an enumerable that is used to access the unrendered children of a component.
 
-<div class="codemirror-live-edit"
-  data-heading="The children method"
-  data-rows=20
-  data-top-level-component="Indenter">
-<pre>
+```ruby runable
 class IndentEachLine < Hyperloop::Component
   param by: 20, type: Integer
 
@@ -822,7 +814,7 @@ class Indenter < Hyperloop::Component
     end
   end
 end
-</pre></div>
+```
 
 ### Lifecycle Methods
 
