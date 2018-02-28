@@ -332,11 +332,7 @@ br                   # okay
 
 #### A Simple Example
 
-<div class="codemirror-live-edit"
-  data-heading="A simple Component rendering state"
-  data-rows=12
-  data-top-level-component="LikeButton">
-<pre>
+```ruby runable
 class LikeButton < Hyperloop::Component
 
   render(DIV) do
@@ -347,7 +343,7 @@ class LikeButton < Hyperloop::Component
     end
   end
 end
-</pre></div>
+```
 
 
 ### Components are Just State Machines
