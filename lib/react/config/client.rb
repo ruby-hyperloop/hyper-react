@@ -9,7 +9,7 @@ if RUBY_ENGINE == 'opal'
       def config
         hash = %x{
           Opal.hash({
-            environment: <%= '"' + React::Config.config[:environment] + '"' %>
+            environment: 'development'
           })
         }
         hash
