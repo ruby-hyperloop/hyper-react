@@ -364,14 +364,14 @@ Most of your components should simply take some params and render based on their
 
 A common pattern is to create several stateless components that just render data, and have a stateful component above them in the hierarchy that passes its state to its children via `params`. The stateful component encapsulates all of the interaction logic, while the stateless components take care of rendering data in a declarative way.
 
-### What *Should* Go in State?
+### What Should Go in State?
 
 **State should contain data that a component's event handlers, timers, or http requests may change and trigger a UI update.**
 
 When building a stateful component, think about the minimal possible representation of its state, and only store those properties in `state`.  Add to your class methods to compute higher level values from your state variables.  Avoid adding redundant or computed values as state variables as
 these values must then be kept in sync whenever state changes.
 
-### What *Shouldn't* Go in State?
+### What Shouldn't Go in State?
 
 `state` should only contain the minimal amount of data needed to represent your UI's state. As such, it should not contain:
 
