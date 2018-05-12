@@ -2,11 +2,11 @@
 
 source "https://rubygems.org"
 
-ruby ">= 1.9.3"
+ruby ">= 2.4.0"
 
-gem "opal", "~> 0.8.0"
-gem "opal-rails", "~> 0.8.1"
-gem "react-rails", "~> 1.6.2", :require => false
+gem "opal", ">= 0.10.5"
+gem "opal-rails", ">= 0.9.3"
+gem "react-rails", ">= 2.3.0", :require => false
 
 group :development do
   gem "appraisal"

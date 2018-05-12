@@ -1,14 +1,13 @@
 require 'hyperloop-config'
 Hyperloop.import 'hyper-store'
-Hyperloop.import 'react/react-source-browser'
+Hyperloop.import 'react/react-source-browser', client_only: true
 Hyperloop.import 'react/react-source-server', server_only: true
 Hyperloop.import 'opal-jquery', client_only: true
 Hyperloop.import 'browser/delay', client_only: true
-Hyperloop.import 'react_ujs', client_only: true
 Hyperloop.import 'hyper-react'
+Hyperloop.import 'react_ujs'
 
 if RUBY_ENGINE == 'opal'
-
   module Hyperloop
     class Component
     end
@@ -41,7 +40,7 @@ if RUBY_ENGINE == 'opal'
   require 'react/rendering_context'
   require 'react/state'
   require 'react/object'
-  require "react/ext/opal-jquery/element"
+  require 'react/ext/opal-jquery/element'
   require 'reactive-ruby/isomorphic_helpers'
   require 'rails-helpers/top_level_rails_component'
   require 'reactive-ruby/version'
@@ -53,7 +52,7 @@ if RUBY_ENGINE == 'opal'
     end
   end
   React::Component.deprecation_warning(
-    'components.rb',
+    'component.rb',
     "Requiring 'hyper-react' is deprecated.  Use gem 'hyper-component', and require 'hyper-component' instead."
   ) unless defined? Hyperloop::Component::VERSION
 else
@@ -73,5 +72,5 @@ else
   require 'reactive-ruby/serializers'
 
   Opal.append_path File.expand_path('../', __FILE__).untaint
-  require "react/react-source"
+  require 'react/react-source'
 end
