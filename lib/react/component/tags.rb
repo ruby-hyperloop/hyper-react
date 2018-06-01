@@ -1,15 +1,3 @@
-# class HtmlTagWrapper
-#   def initialize(name)
-#     @name = name
-#   end
-#   def to_s
-#     @name
-#   end
-#   def method_missing(n)
-#
-# end
-
-
 module React
   module Component
     # contains the name of all HTML tags, and the mechanism to register a component
@@ -28,36 +16,27 @@ module React
                   radialGradient rect stop svg text tspan)
 
       # the present method is retained as a legacy behavior
-
       def present(component, *params, &children)
         React::RenderingContext.render(component, *params, &children)
       end
 
       # define each predefined tag as an instance method
-
-
-
-
       HTML_TAGS.each do |tag|
-        define_method(tag) do |*params, &children|
-          if tag == 'p'
+        if tag == 'p'
+          define_method(tag) do |*params, &children|
             if children || params.count == 0 || (params.count == 1 && params.first.is_a?(Hash))
               React::RenderingContext.render(tag, *params, &children)
             else
               Kernel.p(*params)
             end
-          else
+          end
+        else
+          define_method(tag) do |*params, &children|
             React::RenderingContext.render(tag, *params, &children)
           end
         end
-        if tag != :div
-          alias_method tag.upcase, tag
-          const_set tag.upcase, tag
-        else
-          alias_method tag.upcase, tag
-          #const_set tag.upcase, React.create_element(tag)
-          #Object.const_set tag.upcase, Class.new(HtmlTagWrapper)
-        end
+        alias_method tag.upcase, tag
+        const_set tag.upcase, tag
       end
 
       def self.html_tag_class_for(tag)

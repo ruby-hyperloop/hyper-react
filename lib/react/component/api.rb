@@ -2,17 +2,11 @@ module React
   module Component
     module API
       def dom_node
-        if !(`typeof ReactDOM === 'undefined' || typeof ReactDOM.findDOMNode === 'undefined'`)
-          `ReactDOM.findDOMNode(#{self}.native)` # v0.14.0
-        elsif !(`typeof React.findDOMNode === 'undefined'`)
-          `React.findDOMNode(#{self}.native)`    # v0.13.0
-        else
-          `#{self}.native.getDOMNode`            # v0.12.0
-        end
+        `ReactDOM.findDOMNode(#{self}.native)` # react >= v0.15.0
       end
 
       def mounted?
-        `#{self}.native.isMounted()`
+        `(#{self}.is_mounted === undefined) ? false : #{self}.is_mounted`
       end
 
       def force_update!
@@ -20,30 +14,55 @@ module React
       end
 
       def set_props(prop, &block)
-        set_or_replace_state_or_prop(prop, 'setProps', &block)
+        raise "set_props: setProps() is no longer supported by react"
       end
-
-      def set_props!(prop, &block)
-        set_or_replace_state_or_prop(prop, 'replaceProps', &block)
-      end
+      alias :set_props! :set_props
 
       def set_state(state, &block)
         set_or_replace_state_or_prop(state, 'setState', &block)
       end
 
       def set_state!(state, &block)
-        set_or_replace_state_or_prop(state, 'replaceState', &block)
+        set_or_replace_state_or_prop(state, 'setState', &block)
+        `#{self}.native.forceUpdate()`
       end
 
       private
 
       def set_or_replace_state_or_prop(state_or_prop, method, &block)
         raise "No native ReactComponent associated" unless @native
-        %x{
-          #{@native}[#{method}](#{state_or_prop.shallow_to_n}, function(){
-            #{block.call if block}
-          });
-        }
+        `var state_prop_n = #{state_or_prop.shallow_to_n}`
+        # the state object is initalized when the ruby component is instanciated
+        # this is detected by self.native.__opalInstanceInitializedState
+        # which is set in the netive component constructor in react/api.rb
+        # the setState update callback is not called when initalizing initial state
+        if block
+          %x{
+            if (#{@native}.__opalInstanceInitializedState === true) {
+              #{@native}[method](state_prop_n, function(){
+                #{block.call}
+              });
+            } else {
+              for (var sp in state_prop_n) {
+                if (state_prop_n.hasOwnProperty(sp)) {
+                  #{@native}.state[sp] = state_prop_n[sp];
+                }
+              }
+            }
+          }
+        else
+          %x{
+            if (#{@native}.__opalInstanceInitializedState === true) {
+              #{@native}[method](state_prop_n);
+            } else {
+              for (var sp in state_prop_n) {
+                if (state_prop_n.hasOwnProperty(sp)) {
+                  #{@native}.state[sp] = state_prop_n[sp];
+                } 
+              }
+            }
+          }
+        end
       end
     end
   end

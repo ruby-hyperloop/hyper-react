@@ -36,7 +36,7 @@ module React
 
     def on(*event_names, &block)
       event_names.each { |event_name| merge_event_prop!(event_name, &block) }
-      @native = `React.cloneElement(#{to_n}, #{properties.shallow_to_n})`
+      @native = `React.cloneElement(#{@native}, #{@properties.shallow_to_n})`
       self
     end
 
@@ -50,8 +50,8 @@ module React
       else
         props = API.convert_props(props)
         React::RenderingContext.render(
-          Element.new(`React.cloneElement(#{to_n}, #{props.shallow_to_n})`,
-                      type, properties.merge(props), block),
+          Element.new(`React.cloneElement(#{@native}, #{props.shallow_to_n})`,
+                      type, @properties.merge(props), block),
         )
       end
     end
@@ -62,12 +62,8 @@ module React
     def delete
       React::RenderingContext.delete(self)
     end
-
     # Deprecated version of delete method
-
-    def as_node
-      React::RenderingContext.as_node(self)
-    end
+    alias as_node delete
 
     # Any other method applied to an element will be treated as class name (haml style) thus
     # div.foo.bar(id: :fred) is the same as saying div(class: "foo bar", id: :fred)
@@ -98,7 +94,7 @@ module React
 
     def build_new_properties(class_name, args)
       class_name = self.class.haml_class_name(class_name)
-      new_props = properties.dup
+      new_props = @properties.dup
       new_props[:className] = "\
         #{class_name} #{new_props[:className]} #{args.delete(:class)} #{args.delete(:className)}\
       ".split(' ').uniq.join(' ')
@@ -127,7 +123,6 @@ module React
       elsif @type.instance_variable_get('@native_import')
         merge_component_event_prop! name, &block
       else
-        merge_deprecated_component_event_prop! event_name, &block
         merge_component_event_prop! "on_#{event_name}", &block
       end
     end
@@ -150,20 +145,6 @@ module React
           }
         }
       )
-    end
-
-    def merge_deprecated_component_event_prop!(event_name)
-      prop_name = "_on#{event_name.event_camelize}"
-      fn = %x{function(){#{
-        React::Component.deprecation_warning(
-          type,
-          "In future releases React::Element#on('#{event_name}') will no longer respond "\
-          "to the '#{prop_name}' emitter.\n"\
-          "Rename your emitter param to 'on_#{event_name}' or use .on('<#{prop_name}>')"
-        )}
-        return #{yield(*Array(`arguments`))}
-      }}
-      @properties.merge!(prop_name => fn)
     end
   end
 end

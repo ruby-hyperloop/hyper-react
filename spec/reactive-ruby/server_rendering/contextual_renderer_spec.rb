@@ -1,6 +1,5 @@
 require 'spec_helper'
 
-if ruby?
 RSpec.describe ReactiveRuby::ServerRendering::ContextualRenderer do
   let(:renderer) { described_class.new({}) }
   let(:init) { Proc.new {} }
@@ -12,7 +11,9 @@ RSpec.describe ReactiveRuby::ServerRendering::ContextualRenderer do
                                 { todo: 'finish reactive-ruby' },
                                 options)
       expect(result).to match(/<li.*>finish reactive-ruby<\/li>/)
-      expect(result).to match(/data-react-checksum/)
+      # react 16 does not generate checksum
+      # expect(result).to match(/data-react-checksum/)
+      expect(result).to match(/data-reactroot/)
     end
 
     it 'accepts props as a string' do
@@ -20,7 +21,9 @@ RSpec.describe ReactiveRuby::ServerRendering::ContextualRenderer do
                                 { todo: 'finish reactive-ruby' }.to_json,
                                 options)
       expect(result).to match(/<li.*>finish reactive-ruby<\/li>/)
-      expect(result).to match(/data-react-checksum/)
+            # react 16 does not generate checksum
+      # expect(result).to match(/data-react-checksum/)
+      expect(result).to match(/data-reactroot/)
     end
 
     it 'pre-renders static content' do
@@ -28,8 +31,9 @@ RSpec.describe ReactiveRuby::ServerRendering::ContextualRenderer do
                                 { todo: 'finish reactive-ruby' },
                                 :static)
       expect(result).to match(/<li.*>finish reactive-ruby<\/li>/)
-      expect(result).to_not match(/data-react-checksum/)
+      # react 16 does not generate checksum
+      # expect(result).to_not match(/data-react-checksum/)
+      expect(result).to_not match(/data-reactroot/)
     end
   end
-end
 end

@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-RSpec.describe React::IsomorphicHelpers do
+describe React::IsomorphicHelpers do
   describe 'code execution context' do
     let(:klass) { Class.send(:include, described_class) }
 
@@ -37,7 +37,6 @@ RSpec.describe React::IsomorphicHelpers do
     end
   end
 
-if ruby?
   describe 'load_context', :ruby do
     let(:v8_context) { TestV8Context.new }
     let(:controller) { double('controller') }
@@ -48,7 +47,9 @@ if ruby?
       expect(context.controller).to eq(controller)
     end
 
-    it 'creates a context and sets a unique_id' do
+    it 'creates a context and sets a unique_id', js: true do
+      # this tests loads the prerender context and somehow trys evaluate_ruby, works only with above js: true
+      # TODO this is triggered by TimeCop for some reason
       Timecop.freeze do
         stamp = Time.now.to_i
         context = described_class.load_context(v8_context, controller, name)
@@ -60,6 +61,9 @@ if ruby?
   describe React::IsomorphicHelpers::Context do
     class TestV8Context < Hash
       def eval(args)
+        true
+      end
+      def attach(*args)
         true
       end
     end
@@ -77,9 +81,8 @@ if ruby?
     end
 
     def react_context
-      if ::Rails.application.assets['react-server.js'] &&
-         !::Rails.application.assets['react-server.js'].to_s.start_with?("// A placeholder file")
-        test_context(['components', 'react-server.js'])
+      if ::Rails.application.assets['react-server.js']
+        test_context(['server_rendering.js', 'react-server.js'])
       else
         test_context(['components', 'react.js'])
       end
@@ -93,11 +96,6 @@ if ruby?
     end
 
     describe '#initialize' do
-      it "sets the given V8 context's ServerSideIsomorphicMethods to itself" do
-        context = described_class.new('unique-id', v8_context, controller, name)
-        expect(v8_context['ServerSideIsomorphicMethods']).to eq(context)
-      end
-
       it 'calls before mount callbacks' do
         string = instance_double(String)
         described_class.register_before_first_mount_block do
@@ -118,11 +116,11 @@ if ruby?
     end
 
     describe '#send_to_opal' do
-      let(:opal_code) { Opal::Builder.new.build_str(ruby_code, __FILE__) }
+      let(:opal_code) { Opal::Builder.new.build_str(ruby_code, __FILE__).to_s }
       let(:ruby_code) { %Q[
         module React::IsomorphicHelpers
           def self.greet(name)
-            "Hello, #\{name}!"
+            "Hello, " + name + "!"
           end
 
           def self.valediction
@@ -136,13 +134,13 @@ if ruby?
         context.instance_variable_set(:@ctx, test_context)
         expect {
           context.send_to_opal(:foo)
-        }.to raise_error(/No react.rb components found/)
+        }.to raise_error(/No HyperReact components found/)
       end
 
       it 'executes method with args inside opal rubyracer context' do
         ctx = react_context
         context = described_class.new('unique-id', ctx, controller, name)
-        ctx.eval(opal_code)
+        context.eval(opal_code)
         result = context.send_to_opal(:greet, 'world')
         expect(result).to eq('Hello, world!')
       end
@@ -150,11 +148,10 @@ if ruby?
       it 'executes the method inside opal rubyracer context' do
         ctx = react_context
         context = described_class.new('unique-id', ctx, controller, name)
-        ctx.eval(opal_code)
+        context.eval(opal_code)
         result = context.send_to_opal(:valediction)
         expect(result).to eq('Goodbye')
       end
     end
   end
-end
 end

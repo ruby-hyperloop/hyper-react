@@ -1,6 +1,8 @@
 require 'spec_helper'
 
-if ruby?
+require 'rails-controller-testing'
+Rails::Controller::Testing.install
+
 class TestController < ActionController::Base; end
 
 RSpec.describe TestController, type: :controller do
@@ -21,14 +23,13 @@ RSpec.describe TestController, type: :controller do
     end
 
     it 'renders with the default layout' do
-      get :index, no_prerender: true
+      get :index
       expect(response).to render_template(layout: :test_layout)
     end
 
     it "renders with a specified layout" do
-      get :new, no_prerender: true
+      get :new
       expect(response).to render_template(layout: :explicit_layout)
     end
   end
-end
 end

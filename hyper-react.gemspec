@@ -1,48 +1,47 @@
 # -*- encoding: utf-8 -*-
 $:.push File.expand_path('../lib/', __FILE__)
-
 require 'reactive-ruby/version'
 
-Gem::Specification.new do |s|
-  s.name         = 'hyper-react'
-  s.version      = React::VERSION
+Gem::Specification.new do |spec|
+  spec.name          = 'hyper-react'
+  spec.version       = React::VERSION
 
-  s.authors       = ['David Chang', 'Adam Jahn', 'Mitch VanDuyn']
-  s.email        = 'reactrb@catprint.com'
-  s.homepage     = 'http://ruby-hyperloop.io/gems/reactrb/'
-  s.summary      = 'Opal Ruby wrapper of React.js library.'
-  s.license      = 'MIT'
-  s.description  = "Write React UI components in pure Ruby."
-  s.files          = `git ls-files`.split("\n")
-  s.executables    = `git ls-files -- bin/*`.split("\n").map { |f| File.basename(f) }
-  s.test_files     = `git ls-files -- {test,spec,features}/*`.split("\n")
-  s.require_paths  = ['lib']
+  spec.authors       = ['David Chang', 'Adam Jahn', 'Mitch VanDuyn', 'Jan Biedermann']
+  spec.email         = ['mitch@catprint.com', 'jan@kursator.com']
+  spec.homepage      = 'http://ruby-hyperloop.org'
+  spec.summary       = 'Opal Ruby wrapper of React.js library.'
+  spec.license       = 'MIT'
+  spec.description   = 'Write React UI components in pure Ruby.'
+  # spec.metadata      = {
+  #   "homepage_uri" => 'http://ruby-hyperloop.org',
+  #   "source_code_uri" => 'https://github.com/ruby-hyperloop/hyper-component'
+  # }
 
-  s.add_dependency 'opal', '>= 0.8.0'
-  s.add_dependency 'opal-activesupport', '>= 0.2.0'
-  s.add_dependency 'hyper-store', '>= 0.2.1'
-  s.add_dependency 'hyperloop-config', '>= 0.9.7'
-  s.add_development_dependency 'rake', '< 11.0'
-  s.add_development_dependency 'rspec-rails', '3.3.3'
-  s.add_development_dependency 'timecop'
-  s.add_development_dependency 'opal-rspec'
-  s.add_development_dependency 'sinatra'
-  s.add_development_dependency 'opal-jquery'
+  spec.files         = `git ls-files`.split("\n").reject { |f| f.match(%r{^(gemfiles|spec)/}) }
+  spec.executables   = `git ls-files -- bin/*`.split("\n").map { |f| File.basename(f) }
+  spec.test_files    = `git ls-files -- {test,spec,features}/*`.split("\n")
+  spec.require_paths = ['lib']
 
-  # For Test Rails App
-  s.add_development_dependency 'rails', '4.2.4'
-  s.add_development_dependency 'mime-types', '< 3'
-  s.add_development_dependency 'opal-rails'
-  s.add_development_dependency 'react-rails', '<= 1.10.0'
+  spec.add_dependency 'hyper-store', React::VERSION
+  spec.add_dependency 'opal', '>= 0.11.0', '< 0.12.0'
+  spec.add_dependency 'opal-activesupport', '~> 0.3.1'
 
-  s.add_development_dependency 'nokogiri', '< 1.7'
-  s.add_development_dependency 'rubocop'
-  if RUBY_PLATFORM == 'java'
-    s.add_development_dependency 'jdbc-sqlite3'
-    s.add_development_dependency 'activerecord-jdbcsqlite3-adapter'
-    s.add_development_dependency 'therubyrhino'
-  else
-    s.add_development_dependency 'sqlite3', '1.3.10'
-    s.add_development_dependency 'therubyracer', '0.12.2'
-  end
+  spec.add_development_dependency 'chromedriver-helper'
+  spec.add_development_dependency 'hyper-spec', React::VERSION
+  spec.add_development_dependency 'jquery-rails'
+  spec.add_development_dependency 'listen'
+  spec.add_development_dependency 'mime-types'
+  spec.add_development_dependency 'nokogiri'
+  spec.add_development_dependency 'opal-jquery'
+  spec.add_development_dependency 'opal-rails', '~> 0.9.3'
+  spec.add_development_dependency 'opal-rspec'
+  spec.add_development_dependency 'rails', '>= 4.0.0'
+  spec.add_development_dependency 'rails-controller-testing'
+  spec.add_development_dependency 'rake'
+  spec.add_development_dependency 'react-rails', '>= 2.4.0', '< 2.5.0'
+  spec.add_development_dependency 'rspec-rails'
+  spec.add_development_dependency 'rubocop', '~> 0.51.0'
+  spec.add_development_dependency 'sqlite3'
+  spec.add_development_dependency 'mini_racer', '~> 0.1.15'
+  spec.add_development_dependency 'timecop', '~> 0.8.1'
 end

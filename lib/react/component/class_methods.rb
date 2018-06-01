@@ -16,17 +16,6 @@ module React
         @backtrace_off = @dont_catch_exceptions || (args[0] == :off)
       end
 
-      def process_exception(e, component, reraise = @dont_catch_exceptions)
-        unless @dont_catch_exceptions
-          message = ["Exception raised while rendering #{component}: #{e.message}"]
-          if e.backtrace && e.backtrace.length > 1 && !@backtrace_off
-            append_backtrace(message, e.backtrace)
-          end
-          `console.error(#{message.join("\n")})`
-        end
-        raise e if reraise
-      end
-
       def append_backtrace(message_array, backtrace)
         message_array << "    #{backtrace[0]}"
         backtrace[1..-1].each { |line| message_array << line }
@@ -63,8 +52,7 @@ module React
             _componentValidator: %x{
               function(props, propName, componentName) {
                 var errors = #{validator.validate(Hash.new(`props`))};
-                var error = new Error(#{"In component `#{name}`\n" + `errors`.join("\n")});
-                return #{`errors`.count > 0 ? `error` : `undefined`};
+                return #{`errors`.count > 0 ? `new Error(#{"In component `#{name}`\n" + `errors`.join("\n")})` : `undefined`};
               }
             }
           }
@@ -183,6 +171,10 @@ module React
           )
           current_tree
         end
+      end
+
+      def to_n 
+        React::API.class_eval('@@component_classes')[self]
       end
     end
   end

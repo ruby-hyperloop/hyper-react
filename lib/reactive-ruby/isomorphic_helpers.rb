@@ -8,15 +8,17 @@ module React
 
     if RUBY_ENGINE != 'opal'
       def self.load_context(ctx, controller, name = nil)
-        puts "************************** React Server Context Initialized #{name} *********************************************"
         @context = Context.new("#{controller.object_id}-#{Time.now.to_i}", ctx, controller, name)
+        @context.load_opal_context
+        ::Rails.logger.debug "************************** React Server Context Initialized #{name} #{Time.now.to_f} *********************************************"
+        @context
       end
     else
       def self.load_context(unique_id = nil, name = nil)
         # can be called on the client to force re-initialization for testing purposes
         if !unique_id || !@context || @context.unique_id != unique_id
           if on_opal_server?
-           `console.history = []` rescue nil
+            `console.history = []` rescue nil
             message = "************************ React Prerendering Context Initialized #{name} ***********************"
           else
             message = "************************ React Browser Context Initialized ****************************"
@@ -26,6 +28,10 @@ module React
         end
         @context
       end
+    end
+
+    def self.context
+      @context
     end
 
     def self.log(message, message_type = :info)
@@ -95,6 +101,11 @@ module React
       attr_reader :controller
       attr_reader :unique_id
 
+      def self.define_isomorphic_method(method_name, &block)
+        @@ctx_methods ||= {}
+        @@ctx_methods[method_name] = block
+      end
+
       def self.before_first_mount_blocks
         @before_first_mount_blocks ||= []
       end
@@ -103,27 +114,39 @@ module React
         @prerender_footer_blocks ||= []
       end
 
-      def initialize(unique_id, ctx = nil, controller = nil, name = nil)
+      def initialize(unique_id, ctx = nil, controller = nil, cname = nil)
         @unique_id = unique_id
+        @cname = cname
         if RUBY_ENGINE != 'opal'
           @controller = controller
           @ctx = ctx
-          ctx["ServerSideIsomorphicMethods"] = self
-          send_to_opal(:load_context, @unique_id, name)
+          if defined? @@ctx_methods
+            @@ctx_methods.each do |method_name, block|
+              @ctx.attach("ServerSideIsomorphicMethod.#{method_name}", proc{|args| block.call(args.to_json)})
+            end
+          end
         end
         Hyperloop::Application::Boot.run(context: self)
         self.class.before_first_mount_blocks.each { |block| block.call(self) }
+      end
+
+      def load_opal_context
+        send_to_opal(:load_context, @unique_id, @cname)
       end
 
       def eval(js)
         @ctx.eval(js) if @ctx
       end
 
-      def send_to_opal(method, *args)
+      def send_to_opal(method_name, *args)
         return unless @ctx
         args = [1] if args.length == 0
         ::ReactiveRuby::ComponentLoader.new(@ctx).load!
-        @ctx.eval("Opal.React.$const_get('IsomorphicHelpers').$#{method}(#{args.collect { |arg| "'#{arg}'"}.join(', ')})")
+        method_args = args.collect do |arg|
+          quarg = "#{arg}".tr('"', "'")
+          "\"#{quarg}\""
+        end.join(', ')
+        @ctx.eval("Opal.React.$const_get('IsomorphicHelpers').$#{method_name}(#{method_args})")
       end
 
       def self.register_before_first_mount_block(&block)
@@ -147,7 +170,7 @@ module React
         @name = name
         @context = context
         block.call(self, *args)
-        @result ||= send_to_server(*args) if IsomorphicHelpers.on_opal_server?
+        @result ||= send_to_server(*args)
       end
 
       def when_on_client(&block)
@@ -156,8 +179,8 @@ module React
 
       def send_to_server(*args)
         if IsomorphicHelpers.on_opal_server?
-          args_as_json = args.to_json
-          @result = [JSON.parse(`Opal.global.ServerSideIsomorphicMethods[#{@name}](#{args_as_json})`)]
+          method_string = "ServerSideIsomorphicMethod." + @name + "(" + args.to_json + ")"
+          @result = [JSON.parse(`eval(method_string)`)]
         end
       end
 
@@ -184,16 +207,16 @@ module React
       end
 
       def before_first_mount(&block)
-        React::IsomorphicHelpers::Context.register_before_first_mount_block &block
+        React::IsomorphicHelpers::Context.register_before_first_mount_block(&block)
       end
 
       def prerender_footer(&block)
-        React::IsomorphicHelpers::Context.register_prerender_footer_block &block
+        React::IsomorphicHelpers::Context.register_prerender_footer_block(&block)
       end
 
       if RUBY_ENGINE != 'opal'
         def isomorphic_method(name, &block)
-          React::IsomorphicHelpers::Context.send(:define_method, name) do |args_as_json|
+          React::IsomorphicHelpers::Context.send(:define_isomorphic_method, name) do |args_as_json|
             React::IsomorphicHelpers::IsomorphicProcCall.new(name, block, self, *JSON.parse(args_as_json)).result
           end
         end

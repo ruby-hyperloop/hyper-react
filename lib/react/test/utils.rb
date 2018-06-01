@@ -1,24 +1,70 @@
 module React
   module Test
     class Utils
-      `var ReactTestUtils = React.addons.TestUtils`
-
-      def self.render_into_document(element, options = {})
-        raise "You should pass a valid React::Element" unless React.is_valid_element?(element)
-        native_instance = `ReactTestUtils.renderIntoDocument(#{element.to_n})`
-
-        if `#{native_instance}._getOpalInstance !== undefined`
-          `#{native_instance}._getOpalInstance()`
-        elsif `ReactTestUtils.isDOMComponent(#{native_instance}) && React.findDOMNode !== undefined`
-          `React.findDOMNode(#{native_instance})`
-        else
-          native_instance
-        end
+      def self.render_component_into_document(component, args = {})
+        element = React.create_element(component, args)
+        render_into_document(element)
       end
 
-      def self.simulate(event, element, params = {})
-        simulator = Native(`ReactTestUtils.Simulate`)
-        simulator[event.to_s].call(`element.$dom_node === undefined` ? element : element.dom_node, params)
+      def self.render_into_document(element)
+        raise "You should pass a valid React::Element" unless React.is_valid_element?(element)
+        dom_el = `document.body.querySelector('div[data-react-class="React.TopLevelRailsComponent"]').appendChild(document.createElement('div'))`
+        React.render(element, dom_el)
+      end
+
+      def self.simulate_click(element)
+        # element must be a component or a dom node or a element
+        el =  if `typeof element.nodeType !== "undefined"`
+                element
+              elsif element.is_a? React::Component
+                element.dom_node
+              elsif element.is_a? React::Element
+                `ReactDOM.findDOMNode(#{element.to_n}.native)`
+              else
+                element
+              end
+        %x{
+          var evob = new MouseEvent('click', {
+            view: window,
+            bubbles: true,
+            cancelable: true
+          });
+          el.dispatchEvent(evob);
+        }
+      end
+
+      def self.simulate_keydown(element, key_name = "Enter")
+        # element must be a component or a dom node or a element
+        el =  if `typeof element.nodeType !== "undefined"`
+                element
+              elsif element.is_a? React::Component
+                element.dom_node
+              elsif element.is_a? React::Element
+                `ReactDOM.findDOMNode(#{element.to_n}.native)`
+              else
+                element
+              end
+        %x{
+          var evob = new KeyboardEvent('keydown', { key: key_name, bubbles: true, cancelable: true });
+          el.dispatchEvent(evob);
+        }
+      end
+
+      def self.simulate_submit(element)
+        # element must be a component or a dom node or a element
+        el =  if `typeof element.nodeType !== "undefined"`
+                element
+              elsif element.is_a? React::Component
+                element.dom_node
+              elsif element.is_a? React::Element
+                `ReactDOM.findDOMNode(#{element.to_n}.native)`
+              else
+                element
+              end
+        %x{
+          var evob = new Event('submit', { bubbles: true, cancelable: true });
+          el.dispatchEvent(evob);
+        }
       end
     end
   end

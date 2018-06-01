@@ -1,62 +1,32 @@
+dist: trusty
 language: ruby
 rvm:
-  - 1.9.3
-  - 2.0.0
-  - 2.1
-  - jruby-19mode
-before_script:
-  - phantomjs --version
+  - ruby
 env:
-  - PHANTOMJS_VERSION=1.9.8
-gemfile:
-  - gemfiles/opal_0.8_react_13.gemfile
-  - gemfiles/opal_0.8_react_14.gemfile
-  - gemfiles/opal_0.8_react_15.gemfile
-  - gemfiles/opal_0.9_react_13.gemfile
-  - gemfiles/opal_0.9_react_14.gemfile
-  - gemfiles/opal_0.9_react_15.gemfile
-cache:
-  directories:
-    - "travis_phantomjs"
-branches:
-  only:
-    - master
+  - DRIVER=travis HYPER_DEV_GEM_SOURCE="https://gems.ruby-hyperloop.org" TZ=Europe/Berlin
+  - DRIVER=beheaded HYPER_DEV_GEM_SOURCE="https://gems.ruby-hyperloop.org" TZ=Europe/Berlin
 before_install:
-  - "phantomjs --version"
-  - "export PATH=$PWD/travis_phantomjs/phantomjs-$PHANTOMJS_VERSION-linux-x86_64/bin:$PATH"
-  - "phantomjs --version"
-  - "if [ $(phantomjs --version) != $PHANTOMJS_VERSION ]; then rm -rf $PWD/travis_phantomjs; mkdir -p $PWD/travis_phantomjs; fi"
-  - "if [ $(phantomjs --version) != $PHANTOMJS_VERSION ]; then wget https://github.com/Medium/phantomjs/releases/download/v$PHANTOMJS_VERSION/phantomjs-$PHANTOMJS_VERSION-linux-x86_64.tar.bz2 -O $PWD/travis_phantomjs/phantomjs-$PHANTOMJS_VERSION-linux-x86_64.tar.bz2; fi"
-  - "if [ $(phantomjs --version) != $PHANTOMJS_VERSION ]; then tar -xvf $PWD/travis_phantomjs/phantomjs-$PHANTOMJS_VERSION-linux-x86_64.tar.bz2 -C $PWD/travis_phantomjs; fi"
-  - "phantomjs --version"
-  - gem install bundler -v 1.13.7
-script:
-  - bundle exec rake test_app
-  - bundle exec rake
-# These two setup seems to run indefinitely long
-# further investigation required.
-matrix:
-  exclude:
-  - rvm: jruby-19mode
-    gemfile: gemfiles/opal_0.9_react_13.gemfile
-  - rvm: jruby-19mode
-    gemfile: gemfiles/opal_0.9_react_14.gemfile
-  - rvm: jruby-19mode
-    gemfile: gemfiles/opal_0.9_react_15.gemfile
-  include:
-  - rvm: 2.1
-    env: PHANTOMJS_VERSION=2.1.1
-    gemfile: gemfiles/opal_0.10_react_13.gemfile
-  - rvm: 2.1
-    env: PHANTOMJS_VERSION=2.1.1
-    gemfile: gemfiles/opal_0.10_react_14.gemfile
-  - rvm: 2.1
-    env: PHANTOMJS_VERSION=2.1.1
-    gemfile: gemfiles/opal_0.10_react_15.gemfile
-  - rvm: 2.1
-    env: PHANTOMJS_VERSION=2.1.1
-    gemfile: gemfiles/opal_master_react_15.gemfile
-  allow_failures:
-  - rvm: 2.1
-    env: PHANTOMJS_VERSION=2.1.1
-    gemfile: gemfiles/opal_master_react_15.gemfile
+  - if [[ "$DRIVER" == "travis" ]]; then wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb; fi
+  - if [[ "$DRIVER" == "travis" ]]; then sudo dpkg -i google-chrome*.deb; fi
+  - if [[ "$DRIVER" == "beheaded" ]]; then wget https://github.com/mozilla/geckodriver/releases/download/v0.19.1/geckodriver-v0.19.1-linux64.tar.gz; fi
+  - if [[ "$DRIVER" == "beheaded" ]]; then tar zxf geckodriver-v0.19.1-linux64.tar.gz; fi
+  - if [[ "$DRIVER" == "beheaded" ]]; then sudo mv geckodriver /usr/local/bin/; fi
+  - gem install bundler
+before_script:
+  - cd spec/test_app
+  - bundle update
+  - bundle exec rails db:setup
+  - cd ../../
+  - if [[ "$DRIVER" == "travis" ]]; then chromedriver-update; fi
+  - if [[ "$DRIVER" == "travis" ]]; then ls -lR ~/.chromedriver-helper/; fi
+  - if [[ "$DRIVER" == "travis" ]]; then chromedriver --version; fi
+  - if [[ "$DRIVER" == "travis" ]]; then google-chrome --version; fi
+  - if [[ "$DRIVER" == "travis" ]]; then which chromedriver; fi
+  - if [[ "$DRIVER" == "travis" ]]; then which google-chrome; fi
+  - if [[ "$DRIVER" == "beheaded" ]]; then firefox --version; fi
+  - if [[ "$DRIVER" == "beheaded" ]]; then geckodriver --version; fi
+  - if [[ "$DRIVER" == "beheaded" ]]; then which firefox; fi
+  - if [[ "$DRIVER" == "beheaded" ]]; then which geckodriver; fi
+script: bundle exec rspec
+gemfile:
+  - gemfiles/opal_0_11_react-rails_2_4.gemfile

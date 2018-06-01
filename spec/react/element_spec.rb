@@ -1,136 +1,132 @@
 require "spec_helper"
 
-if opal?
-# require 'reactrb/new-event-name-convention' # this require will get rid of any error messages but
-# the on method will no longer attach to the param prefixed with _on
-describe React::Element, type: :component do
+describe 'React::Element', js: true do
   it 'bridges `type` of native React.Element attributes' do
-    element = React.create_element('div')
-    expect(element.element_type).to eq("div")
+    expect_evaluate_ruby do
+      element = React.create_element('div')
+      element.element_type
+    end.to eq("div")
   end
 
-  async 'is renderable' do
-    element = React.create_element('span')
-    div = `document.createElement("div")`
-    React.render(element, div) do
-      run_async {
-        expect(`div.children[0].tagName`).to eq("SPAN")
-      }
-    end
+  it 'is renderable' do
+    expect_evaluate_ruby do
+      element = React.create_element('span')
+      div = JS.call(:eval, 'document.createElement("div")')
+      React.render(element, div)
+      div.JS[:children].JS[0].JS[:tagName]
+    end.to eq("SPAN")
   end
 
   describe "Event Subscription" do
     it "keeps the original params" do
-      stub_const 'Foo', Class.new
-      Foo.class_eval do
-        include React::Component
-        def render
-          INPUT(value: nil, type: 'text').on(:change) {}
+      client_option render_on: :both
+      mount 'Foo' do
+        class Foo
+          include React::Component
+          def render
+            INPUT(value: nil, type: 'text').on(:change) {}
+          end
         end
       end
-
-      expect(React::Server.render_to_static_markup(React.create_element(Foo))).to match(/<input (type="text" value=""|value="" type="text")(\/)?>/)
+      expect(page.body[-80..-19]).to match(/<input (type="text" value=""|value="" type="text").*\/>/)
     end
   end
 
   describe 'Component Event Subscription' do
 
     it 'will subscribe to a component event param' do
-      stub_const 'Foo', Class.new(React::Component::Base)
-      Foo.class_eval do
-        param :on_event, type: Proc, default: nil, allow_nil: true
-        def render
-          params.on_event
+      evaluate_ruby do
+        class Foo < React::Component::Base
+          param :on_event, type: Proc, default: nil, allow_nil: true
+          def render
+            params.on_event
+          end
         end
+        React::Test::Utils.render_into_document(React.create_element(Foo).on(:event) {'works!'})
       end
-      expect(React::Server.render_to_static_markup(React.create_element(Foo).on(:event) {'works!'})).to eq('<span>works!</span>')
+      expect(page.body[-50..-19]).to include('<span>works!</span>')
     end
 
     it 'will subscribe to multiple component event params' do
-      stub_const 'Foo', Class.new(React::Component::Base)
-      Foo.class_eval do
-        param :on_event1, type: Proc, default: nil, allow_nil: true
-        param :on_event2, type: Proc, default: nil, allow_nil: true
-        def render
-          params.on_event1+params.on_event2
+      evaluate_ruby do
+        class Foo < React::Component::Base
+          param :on_event1, type: Proc, default: nil, allow_nil: true
+          param :on_event2, type: Proc, default: nil, allow_nil: true
+          def render
+            params.on_event1+params.on_event2
+          end
         end
+        React::Test::Utils.render_into_document(React.create_element(Foo).on(:event1, :event2) {'works!'})
       end
-      expect(React::Server.render_to_static_markup(React.create_element(Foo).on(:event1, :event2) {'works!'})).to eq('<span>works!works!</span>')
+      expect(page.body[-60..-19]).to include('<span>works!works!</span>')
     end
 
     it 'will subscribe to a native components event param' do
-      %x{
-        window.NativeComponent = React.createClass({
-          displayName: "HelloMessage",
-          render: function render() {
-            return React.createElement("span", null, this.props.onEvent());
-          }
-        })
-      }
-      stub_const 'Foo', Class.new(React::Component::Base)
-      Foo.class_eval do
-        imports "NativeComponent"
+      
+      evaluate_ruby do
+        "this makes sure everything is loaded"
       end
-      expect(React::Server.render_to_static_markup(React.create_element(Foo).on(:event) {'works!'})).to eq('<span>works!</span>')
+      page.execute_script('window.NativeComponent = class extends React.Component {
+        constructor(props) {
+          super(props);
+          this.displayName = "HelloMessage";
+        }
+        render() { return React.createElement("span", null, this.props.onEvent()); }
+      }')
+      evaluate_ruby do
+        class Foo < React::Component::Base
+          imports "NativeComponent"
+        end
+        React::Test::Utils.render_into_document(React.create_element(Foo).on(:event) {'works!'})
+        true
+      end
+      expect(page.body[-60..-19]).to include('<span>works!</span>')
     end
 
     it 'will subscribe to a component event param with a non-default name' do
-      stub_const 'Foo', Class.new(React::Component::Base)
-      Foo.class_eval do
-        param :my_event, type: Proc, default: nil, allow_nil: true
-        def render
-          params.my_event
+      
+      evaluate_ruby do
+        class Foo < React::Component::Base
+          param :my_event, type: Proc, default: nil, allow_nil: true
+          def render
+            params.my_event
+          end
         end
+        React::Test::Utils.render_into_document(React.create_element(Foo).on("<my_event>") {'works!'})
       end
-      expect(React::Server.render_to_static_markup(React.create_element(Foo).on("<my_event>") {'works!'})).to eq('<span>works!</span>')
-    end
-
-    it 'will subscribe to a component event param using the deprecated naming convention and generate a message' do
-      stub_const 'Foo', Class.new(React::Component::Base)
-      Foo.class_eval do
-        param :_onEvent, type: Proc, default: nil, allow_nil: true
-        def render
-          params._onEvent
-        end
-      end
-      %x{
-        var log = [];
-        var org_warn_console =  window.console.warn;
-        var org_error_console = window.console.error;
-        window.console.warn = window.console.error = function(str){log.push(str)}
-      }
-      expect(React::Server.render_to_static_markup(React.create_element(Foo).on(:event) {'works!'})).to eq('<span>works!</span>')
-      `window.console.warn = org_warn_console; window.console.error = org_error_console;`
-      expect(`log[0]`).to match(/Warning: Failed prop( type|Type): In component `Foo`\nProvided prop `on_event` not specified in spec/)
-      expect(`log[1]`).to eq("Warning: Deprecated feature used in Foo. In future releases React::Element#on('event') will no longer respond to the '_onEvent' emitter.\nRename your emitter param to 'on_event' or use .on('<_onEvent>')")
+      expect(page.body[-60..-19]).to include('<span>works!</span>')
     end
   end
 
   describe 'Builtin Event subscription' do
     it 'is subscribable through `on(:event_name)` method' do
-      expect { |b|
-        element = React.create_element("div").on(:click, &b)
+      expect_evaluate_ruby do
+        element = React.create_element("div").on(:click) { |event| RESULT_C = 'clicked' if event.is_a? React::Event }
         dom_node = React::Test::Utils.render_into_document(element)
-        React::Test::Utils.simulate(:click, dom_node)
-      }.to yield_with_args(React::Event)
+        React::Test::Utils.simulate_click(dom_node)
+        RESULT_C rescue 'not clicked'
+      end.to eq('clicked')
 
-      expect { |b|
-        element = React.create_element("div").on(:key_down, &b)
+      expect_evaluate_ruby do
+        element = React.create_element("div").on(:key_down) { |event| RESULT_P = 'pressed' if event.is_a? React::Event }
         dom_node = React::Test::Utils.render_into_document(element)
-        React::Test::Utils.simulate(:keyDown, dom_node, {key: "Enter"})
-      }.to yield_control
+        React::Test::Utils.simulate_keydown(dom_node, "Enter")
+        RESULT_P rescue 'not pressed'
+      end.to eq('pressed')
 
-      expect { |b|
-        element = React.create_element("form").on(:submit, &b)
+      expect_evaluate_ruby do
+        element = React.create_element("form").on(:submit) { |event| RESULT_S = 'submitted' if event.is_a? React::Event }
         dom_node = React::Test::Utils.render_into_document(element)
-        React::Test::Utils.simulate(:submit, dom_node)
-      }.to yield_control
+        React::Test::Utils.simulate_submit(dom_node)
+        RESULT_S rescue 'not submitted'
+      end.to eq('submitted')
     end
 
     it 'returns self for `on` method' do
-      element = React.create_element("div")
-      expect(element.on(:click){}).to eq(element)
+      expect_evaluate_ruby do
+        element = React.create_element("div")
+        element.on(:click){} == element
+      end.to be_truthy
     end
   end
-end
 end

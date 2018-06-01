@@ -14,9 +14,9 @@ module Hyperloop
   class Component
     module Mixin
       def self.included(base)
-        base.include(Store::Mixin)
+        base.include(Hyperloop::Store::Mixin)
         base.include(React::Component::API)
-        base.include(React::Component::Callbacks)
+        base.include(React::Callbacks)
         base.include(React::Component::Tags)
         base.include(React::Component::DslInstanceMethods)
         base.include(React::Component::ShouldComponentUpdate)
@@ -28,6 +28,7 @@ module Hyperloop
           define_callback :before_update
           define_callback :after_update
           define_callback :before_unmount
+          define_callback :after_error
         end
         base.extend(React::Component::ClassMethods)
       end
@@ -46,16 +47,16 @@ module Hyperloop
       end
 
       def emit(event_name, *args)
-        params["_on#{event_name.to_s.event_camelize}"].call(*args)
+        if React::Event::BUILT_IN_EVENTS.include?(built_in_event_name = "on#{event_name.to_s.event_camelize}")
+          params[built_in_event_name].call(*args)
+        else
+          params["on_#{event_name}"].call(*args)
+        end
       end
 
       def component_will_mount
         React::IsomorphicHelpers.load_context(true) if React::IsomorphicHelpers.on_opal_client?
-        # set_state! initial_state if initial_state
-        # State.initialize_states(self, initial_state)
         React::State.set_state_context_to(self) { run_callback(:before_mount) }
-      rescue Exception => e
-        self.class.process_exception(e, self)
       end
 
       def component_did_mount
@@ -63,31 +64,23 @@ module Hyperloop
           run_callback(:after_mount)
           React::State.update_states_to_observe
         end
-      rescue Exception => e
-        self.class.process_exception(e, self)
       end
 
       def component_will_receive_props(next_props)
         # need to rethink how this works in opal-react, or if its actually that useful within the react.rb environment
         # for now we are just using it to clear processed_params
-        React::State.set_state_context_to(self) { self.run_callback(:before_receive_props, Hash.new(next_props)) }
-      rescue Exception => e
-        self.class.process_exception(e, self)
+        React::State.set_state_context_to(self) { self.run_callback(:before_receive_props, next_props) }
       end
 
       def component_will_update(next_props, next_state)
-        React::State.set_state_context_to(self) { self.run_callback(:before_update, Hash.new(next_props), Hash.new(next_state)) }
-      rescue Exception => e
-        self.class.process_exception(e, self)
+        React::State.set_state_context_to(self) { self.run_callback(:before_update, next_props, next_state) }
       end
 
       def component_did_update(prev_props, prev_state)
         React::State.set_state_context_to(self) do
-          self.run_callback(:after_update, Hash.new(prev_props), Hash.new(prev_state))
+          self.run_callback(:after_update, prev_props, prev_state)
           React::State.update_states_to_observe
         end
-      rescue Exception => e
-        self.class.process_exception(e, self)
       end
 
       def component_will_unmount
@@ -95,8 +88,20 @@ module Hyperloop
           self.run_callback(:before_unmount)
           React::State.remove
         end
-      rescue Exception => e
-        self.class.process_exception(e, self)
+      end
+
+      def component_did_catch(error, info)
+        React::State.set_state_context_to(self) do
+          if self.class.callbacks_for(:after_error) == []
+            if `typeof error.$backtrace === "function"`
+              `console.error(error.$backtrace().$join("\n"))`
+            else
+              `console.error(error, info)`
+            end
+          else
+            self.run_callback(:after_error, error, info)
+          end
+        end
       end
 
       attr_reader :waiting_on_resources
@@ -104,8 +109,12 @@ module Hyperloop
       def update_react_js_state(object, name, value)
         if object
           name = "#{object.class}.#{name}" unless object == self
+          # Date.now() has only millisecond precision, if several notifications of 
+          # observer happen within a millisecond, updates may get lost.
+          # to mitigate this the Math.random() appends some random number
+          # this way notifactions will happen as expected by the rest of hyperloop
           set_state(
-            '***_state_updated_at-***' => Time.now.to_f,
+            '***_state_updated_at-***' => `Date.now() + Math.random()`,
             name => value
           )
         else
@@ -113,6 +122,10 @@ module Hyperloop
         end
       end
 
+      def set_state_synchronously?
+        @native.JS[:__opalInstanceSyncSetState]
+      end
+      
       def render
         raise 'no render defined'
       end unless method_defined?(:render)
@@ -124,10 +137,6 @@ module Hyperloop
             element.waiting_on_resources if element.respond_to? :waiting_on_resources
           element
         end
-      # rubocop:disable Lint/RescueException # we want to catch all exceptions regardless
-      rescue Exception => e
-        # rubocop:enable Lint/RescueException
-        self.class.process_exception(e, self)
       end
 
       def watch(value, &on_change)
